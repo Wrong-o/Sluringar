@@ -23,10 +23,11 @@ red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
 
+death_count_per_frame = {}
+
 # Load and scale main menu background image
 bg_main_menu = pygame.image.load('./img/main_menu.png')
 bg_main_menu = pygame.transform.scale(bg_main_menu, (width, height))
-
 
 def load_images(directory):
     """Load images and flip them horizontally to face right."""
@@ -37,7 +38,6 @@ def load_images(directory):
         image_flipped = pygame.transform.flip(image, True, False)  # Flip horizontally, not vertically
         loaded_images.append(image_flipped)
     return loaded_images
-
 
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, position, images, state=0, facing_right=True):
@@ -96,8 +96,6 @@ class AnimatedSprite(pygame.sprite.Sprite):
         if self.rect.left > width:
             self.rect.right = 0  # Wrap around to the left side
 
-
-# Font for text in buttons
 font = pygame.font.Font(None, int(screen_scaler // 24))
 
 def draw_button(text, x, y, w, h, color, action=None):
@@ -153,7 +151,6 @@ class Slider:
     def get_value(self):
         return self.val
 
-
 def exp_dist():
     paused = True
     start_button_clicked = False
@@ -206,37 +203,32 @@ def exp_dist():
             spawned_count += 1
 
         for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                main_menu()
-
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type is pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                paused = True  
+                exp_dist()  
 
         dt = clock.tick(60) / 1000.0  # Get delta time and limit frame rate
         all_sprites.update(dt)
         screen.fill((0, 0, 0))
         all_sprites.draw(screen)
         pygame.display.update()
-
-
-
-
-
 def normal_action():
     print("Normal action selected")
     # Implement the functionality for the normal distribution here
-
 def poisson_action():
     print("Poisson action selected")
     # Implement the functionality for the poisson distribution here
-
 def exit_action():
     pygame.quit()
     sys.exit()
-
 def main_menu():
     menu = True
     while menu:
         for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
