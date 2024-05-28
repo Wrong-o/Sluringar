@@ -206,12 +206,9 @@ def exp_dist():
             spawned_count += 1
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type is pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                paused = True  
-                exp_dist()  
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                main_menu()
+
 
         dt = clock.tick(60) / 1000.0  # Get delta time and limit frame rate
         all_sprites.update(dt)
@@ -239,7 +236,7 @@ def main_menu():
     menu = True
     while menu:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 sys.exit()
 
