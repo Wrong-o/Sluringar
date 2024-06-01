@@ -225,7 +225,7 @@ def exp_dist():
 
         dt = clock.tick(60) / 1000.0  # Get delta time and limit frame rate
         all_sprites.update(dt)
-        screen.fill((0, 0, 0))
+        screen.blit(bg_main_menu, (0, 0))
         all_sprites.draw(screen)
         pygame.display.update()
 
@@ -244,12 +244,10 @@ def main_menu():
     while menu:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                exit_action()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    pygame.quit()
-                    sys.exit()
+                    exit_action()
             
 
         screen.blit(bg_main_menu, (0, 0))
