@@ -34,6 +34,6 @@ def resize_images(source_folder, scale_factor=0.1, target_folder=None):
     print(f"Images resized and saved in {target_folder}")
 
 # Example usage (commented out):
-resize_images(".\sluring", 0.08, ".\sluring_small")
+resize_images("./bluring", 0.08, "./bluring_small")
 
 # The above function call is commented out to prevent execution in the PCI. Uncomment it for local testing or final deployment.

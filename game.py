@@ -29,11 +29,11 @@ death_count_per_frame = {}
 bg_main_menu = pygame.image.load('./img/main_menu.png')
 bg_main_menu = pygame.transform.scale(bg_main_menu, (width, height))
 
-def load_images(directory):
+def load_images(directory, name):
     """Load images and flip them horizontally to face right."""
     loaded_images = []
     for i in range(1, 18):
-        file_path = os.path.join(directory, f"sluring{i}.png")
+        file_path = os.path.join(directory, f"{name}{i}.png")
         image = pygame.image.load(file_path).convert_alpha()
         image_flipped = pygame.transform.flip(image, True, False)  # Flip horizontally, not vertically
         loaded_images.append(image_flipped)
@@ -179,28 +179,41 @@ def exp_dist():
             paused = False  # Exit pause menu loop to resume the game
 
     # Load images once, reuse for all sprites
-    sluring_images = load_images("./img/sluring_small")
+    sluring_images = load_images("./img/sluring_small", "sluring")
+    bluring_images = load_images("./img/bluring_small", "bluring")
     all_sprites = pygame.sprite.Group()
 
     # Variables to manage timed spawning
     num_slurings = 100  # Number of slurings to spawn
-    spawned_count = 0
+    num_bluring = 100
+    sluring_spawned_count = 0
+    bluring_spawned_count = 0
     last_spawn_time = pygame.time.get_ticks()
-    spawn_interval = 5  # milliseconds
+    sluring_spawn_interval = 5  # milliseconds
+    bluring_spawn_interval = 5
 
     running = True
     while running:
         current_time = pygame.time.get_ticks()
 
         # Spawn sprites with a delay
-        if spawned_count < num_slurings and current_time - last_spawn_time >= spawn_interval:
+        if sluring_spawned_count < num_slurings and current_time - last_spawn_time >= sluring_spawn_interval:
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider.get_value()  # Example of using slider value for jump probability
             sluring_sprite = AnimatedSprite((spawn_x, spawn_y), sluring_images, jump_prob)
             all_sprites.add(sluring_sprite)
             last_spawn_time = current_time
-            spawned_count += 1
+            sluring_spawned_count += 1
+
+        if bluring_spawned_count < num_bluring and current_time - last_spawn_time >= bluring_spawn_interval:
+            spawn_x = width / 25
+            spawn_y = height
+            jump_prob = slider.get_value()  # Example of using slider value for jump probability
+            bluring_sprite = AnimatedSprite((spawn_x, spawn_y), bluring_images, jump_prob)
+            all_sprites.add(bluring_sprite)
+            last_spawn_time = current_time
+            bluring_spawned_count += 1
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -233,6 +246,11 @@ def main_menu():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
+            
 
         screen.blit(bg_main_menu, (0, 0))
         draw_button("Exponential", width * 0.20, height / 2, 200, 100, green, exp_dist)

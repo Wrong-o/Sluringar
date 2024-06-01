@@ -28,5 +28,5 @@ def transform_image(image_path, x_scale, y_scale, output_path):
     transformed_img.save(output_path)
 
 # Example usage (uncommented for testing)
-transform_image('sluring1.png', 1.22, 0.73, 'sluring9.png')
+transform_image('bluring.png', 1.04, 0.96, 'bluring2.png')
 
