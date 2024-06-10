@@ -77,6 +77,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
                     self.vy = -5  # Initial vertical velocity for the jump (negative for upwards motion)
                 else:
                     self.alive = False
+                    print(self.counter)
         if self.is_jumping:
             self.jump()
 
@@ -191,7 +192,7 @@ def exp_dist():
     last_spawn_time = pygame.time.get_ticks()
     sluring_spawn_interval = 5  # milliseconds
     bluring_spawn_interval = 5
-
+    results = []
     running = True
     while running:
         current_time = pygame.time.get_ticks()
