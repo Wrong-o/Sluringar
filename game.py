@@ -2,9 +2,8 @@ import pygame
 import random
 import sys
 import os
-import enum
-import math
-import time
+from collections import Counter
+
 pygame.init()
 
 # Frame rate control
@@ -40,7 +39,7 @@ def load_images(directory, name):
     return loaded_images
 
 class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, position, images, state=0, facing_right=True):
+    def __init__(self, position, images, results, state=0, facing_right=True):
         self.counter = 0
         super(AnimatedSprite, self).__init__()
         self.images = images
@@ -56,6 +55,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.vy = 0  # Vertical velocity
         self.gravity = screen_scaler * 0.00017  # Gravity effect
         self.alive = True
+        self.results = results
 
     def flip_image(self, image, facing_right):
         return pygame.transform.flip(image, not facing_right, False)
@@ -70,14 +70,14 @@ class AnimatedSprite(pygame.sprite.Sprite):
             self.index = (self.index + 1) % len(self.images)
             self.image = self.flip_image(self.images[self.index], self.facing_right)
             self.rect = self.image.get_rect(midbottom=(old_centerx, old_bottom))
-            if self.index == 11 and self.alive == True:  # Trigger jump on frame 10
+            if self.index == 11 and self.alive:  # Trigger jump on frame 10
                 if random.random() < 0.8:
                     self.is_jumping = True
-                    self.counter = self.counter + 1
+                    self.counter += 1
                     self.vy = -5  # Initial vertical velocity for the jump (negative for upwards motion)
                 else:
                     self.alive = False
-                    print(self.counter)
+                    self.results.append(self.counter)
         if self.is_jumping:
             self.jump()
 
@@ -91,7 +91,6 @@ class AnimatedSprite(pygame.sprite.Sprite):
             self.rect.bottom = height
             self.is_jumping = False
             self.vy = 0  # Stop vertical motion once back on ground
-
 
         # Optionally handle moving off the screen horizontally
         if self.rect.left > width:
@@ -152,6 +151,26 @@ class Slider:
     def get_value(self):
         return self.val
 
+def draw_histogram(screen, sorted_results):
+    # Calculate dimensions and positions
+    bar_width = 20
+    margin = 10
+    max_height = height - 50
+    max_count = max(count for value, count in sorted_results) if sorted_results else 1
+    x_offset = 50
+    y_offset = height - 50
+
+    for i, (value, count) in enumerate(sorted_results):
+        bar_height = int((count / max_count) * max_height)
+        x = x_offset + i * (bar_width + margin)
+        y = y_offset - bar_height
+        pygame.draw.rect(screen, green, (x, y, bar_width, bar_height))
+        # Draw value labels
+        label = font.render(str(value), True, white)
+        screen.blit(label, (x, y_offset + 5))
+        count_label = font.render(str(count), True, white)
+        screen.blit(count_label, (x, y - 20))
+
 def exp_dist():
     paused = True
     start_button_clicked = False
@@ -193,7 +212,9 @@ def exp_dist():
     sluring_spawn_interval = 5  # milliseconds
     bluring_spawn_interval = 5
     results = []
+    results_found = False
     running = True
+    
     while running:
         current_time = pygame.time.get_ticks()
 
@@ -202,7 +223,7 @@ def exp_dist():
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider.get_value()  # Example of using slider value for jump probability
-            sluring_sprite = AnimatedSprite((spawn_x, spawn_y), sluring_images, jump_prob)
+            sluring_sprite = AnimatedSprite((spawn_x, spawn_y), sluring_images, results, jump_prob)
             all_sprites.add(sluring_sprite)
             last_spawn_time = current_time
             sluring_spawned_count += 1
@@ -211,7 +232,7 @@ def exp_dist():
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider.get_value()  # Example of using slider value for jump probability
-            bluring_sprite = AnimatedSprite((spawn_x, spawn_y), bluring_images, jump_prob)
+            bluring_sprite = AnimatedSprite((spawn_x, spawn_y), bluring_images, results, jump_prob)
             all_sprites.add(bluring_sprite)
             last_spawn_time = current_time
             bluring_spawned_count += 1
@@ -228,9 +249,23 @@ def exp_dist():
         all_sprites.update(dt)
         screen.blit(bg_main_menu, (0, 0))
         all_sprites.draw(screen)
+
+
+        # Check if all sprites are dead and display the frequency table
+        if sluring_spawned_count == num_slurings and bluring_spawned_count == num_bluring and all(sprite.alive == False for sprite in all_sprites):
+            if not results_found:
+                freq_table = Counter(results)
+                min_value = min(results) if results else 0
+                max_value = max(results) if results else 0
+                sorted_result = [(value, freq_table.get(value, 0)) for value in range(min_value, max_value + 1)]
+                print("Sorted Results:", sorted_result)
+                results_found = True
+
+        # Draw histogram if results are found
+        if results_found:
+            draw_histogram(screen, sorted_result)
         pygame.display.update()
 
-        
 def normal_action():
     print("Normal action selected")
     # Implement the functionality for the normal distribution here
