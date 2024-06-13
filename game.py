@@ -135,7 +135,7 @@ class StaticSprite(pygame.sprite.Sprite):
         return image if facing_right else pygame.transform.flip(image, True, False)
 
 
-StaticSprite()
+
 
 font = pygame.font.Font(None, int(screen_scaler // 24))
 
@@ -243,9 +243,10 @@ def exp_dist():
         start_button_clicked = True
 
     slider_left = Slider(screen, 1, 10, width // 5 , height // 2 , 300, 40)
-    slider_sluring = StaticSprite()
+    slider_sluring = StaticSprite((width//16*5, height//2), sluring_images)
     slider_right = Slider(screen, 1, 10, width // 5*3 , height // 2, 300, 40)
-    slider_bluring = 
+    slider_bluring = StaticSprite((width//4*3, height//2), bluring_images)
+
 
     # Pause menu loop
     while paused:
@@ -260,12 +261,14 @@ def exp_dist():
         draw_button("Start", width // 2 - 100, height // 2 - 50, 200, 100, green, start_game)
         slider_left.draw()
         slider_right.draw()
+        all_sprites.add(slider_sluring, slider_bluring)
+        all_sprites.draw(screen)
         pygame.display.update()
 
         if start_button_clicked:
-            paused = False  # Exit pause menu loop to resume the game
+            paused = False
+            all_sprites.empty()  # Exit pause menu loop to resume the game
 
-    # Load images once, reuse for all sprites
 
 
     # Variables to manage timed spawning
@@ -289,7 +292,7 @@ def exp_dist():
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider_left.get_value()  
-            sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/19*18, height / 20))), sluring_images, results, jump_prob, species="sluringar")
+            sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), sluring_images, results, jump_prob, species="sluringar")
             all_sprites.add(sluring_sprite)
             last_sluring_spawn_time = current_time
             sluring_spawned_count += 1
@@ -298,7 +301,7 @@ def exp_dist():
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider_right.get_value()  
-            bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/19*18, height / 20))), bluring_images, results, jump_prob, species="bluringar")
+            bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), bluring_images, results, jump_prob, species="bluringar")
             all_sprites.add(bluring_sprite)
             last_bluring_spawn_time = current_time
             bluring_spawned_count += 1
