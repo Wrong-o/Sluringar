@@ -56,6 +56,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.results = results
         self.species = species
         self.landed = False
+        
 
     def flip_image(self, image, facing_right):
         return pygame.transform.flip(image, not facing_right, False)
@@ -104,6 +105,38 @@ class AnimatedSprite(pygame.sprite.Sprite):
         if self.rect.left > width:
             self.rect.right = 0  # Wrap around to the left side
 
+
+class StaticSprite(pygame.sprite.Sprite):
+    def __init__(self, position, images, state=0, facing_right=True, species="sluringar"):
+        super(StaticSprite, self).__init__()
+        self.images = images
+        self.index = 0
+        self.image = self.flip_image(self.images[self.index], facing_right)
+        self.rect = self.image.get_rect(midbottom=position)
+        self.animation_time = 0.03
+        self.current_time = 0
+        self.state = state
+        self.facing_right = facing_right
+        self.species = species
+
+    def update(self, dt):
+        self.current_time += dt
+        if self.current_time >= self.animation_time:
+            self.current_time = 0
+            old_bottom = self.rect.bottom
+            old_centerx = self.rect.centerx
+            self.index = (self.index + 1) % len(self.images)
+            self.image = self.flip_image(self.images[self.index], self.facing_right)
+            self.rect = self.image.get_rect()
+            self.rect.bottom = old_bottom
+            self.rect.centerx = old_centerx
+
+    def flip_image(self, image, facing_right):
+        return image if facing_right else pygame.transform.flip(image, True, False)
+
+
+StaticSprite()
+
 font = pygame.font.Font(None, int(screen_scaler // 24))
 
 def draw_button(text, x, y, w, h, color, action=None):
@@ -134,11 +167,8 @@ class Slider:
         self.font = pygame.font.Font(None, 36)  # Define the font
 
     def draw(self):
-        # Draw the line
         pygame.draw.line(self.screen, blue, (self.x, self.y + self.h // 2), (self.x + self.w, self.y + self.h // 2), 5)
-        # Draw the slider handle
         pygame.draw.rect(self.screen, red, (self.slider_x, self.y, self.h, self.h))
-        # Draw the value text
         self.draw_value()
 
     def handle_event(self, event):
@@ -203,13 +233,19 @@ def draw_histogram(screen, sorted_results, species, x_mod, y_mod):
 def exp_dist():
     paused = True
     start_button_clicked = False
+    sluring_images = load_images("./img/sluring_small", "sluring")
+    bluring_images = load_images("./img/bluring_small", "bluring")
+    all_sprites = pygame.sprite.Group()
 
     # Define the Start button action
     def start_game():
         nonlocal start_button_clicked
         start_button_clicked = True
 
-    slider = Slider(screen, 1, 10, width // 2 - 150, height // 2 + 50, 300, 40)
+    slider_left = Slider(screen, 1, 10, width // 5 , height // 2 , 300, 40)
+    slider_sluring = StaticSprite()
+    slider_right = Slider(screen, 1, 10, width // 5*3 , height // 2, 300, 40)
+    slider_bluring = 
 
     # Pause menu loop
     while paused:
@@ -217,20 +253,20 @@ def exp_dist():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            slider.handle_event(event)
+            slider_left.handle_event(event)
+            slider_right.handle_event(event)
 
         screen.fill((0, 0, 0))  # Clear screen
         draw_button("Start", width // 2 - 100, height // 2 - 50, 200, 100, green, start_game)
-        slider.draw()
+        slider_left.draw()
+        slider_right.draw()
         pygame.display.update()
 
         if start_button_clicked:
             paused = False  # Exit pause menu loop to resume the game
 
     # Load images once, reuse for all sprites
-    sluring_images = load_images("./img/sluring_small", "sluring")
-    bluring_images = load_images("./img/bluring_small", "bluring")
-    all_sprites = pygame.sprite.Group()
+
 
     # Variables to manage timed spawning
     num_slurings = 500  # Number of slurings to spawn
@@ -252,7 +288,7 @@ def exp_dist():
         if sluring_spawned_count < num_slurings and current_time - last_sluring_spawn_time >= sluring_spawn_interval:
             spawn_x = width / 25
             spawn_y = height
-            jump_prob = slider.get_value()  # Example of using slider value for jump probability
+            jump_prob = slider_left.get_value()  
             sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/19*18, height / 20))), sluring_images, results, jump_prob, species="sluringar")
             all_sprites.add(sluring_sprite)
             last_sluring_spawn_time = current_time
@@ -261,7 +297,7 @@ def exp_dist():
         if bluring_spawned_count < num_bluring and current_time - last_bluring_spawn_time >= bluring_spawn_interval:
             spawn_x = width / 25
             spawn_y = height
-            jump_prob = slider.get_value()  # Example of using slider value for jump probability
+            jump_prob = slider_right.get_value()  
             bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/19*18, height / 20))), bluring_images, results, jump_prob, species="bluringar")
             all_sprites.add(bluring_sprite)
             last_bluring_spawn_time = current_time
@@ -328,9 +364,9 @@ def main_menu():
                     exit_action()
 
         screen.blit(bg_main_menu, (0, 0))
-        draw_button("Exponential", width * 0.20, height / 2, 200, 100, green, exp_dist)
-        draw_button("Normal", width * 0.50, height / 2, 200, 100, green, normal_action)
-        draw_button("Poisson", width * 0.80, height / 2, 200, 100, green, poisson_action)
+        draw_button("Exponential", width * 0.20, height / 2, 300, 100, green, exp_dist)
+        draw_button("Normal", width * 0.50, height / 2, 300, 100, green, normal_action)
+        draw_button("Poisson", width * 0.80, height / 2, 300, 100, green, poisson_action)
         draw_button("Exit", 50, 50, 100, 50, red, exit_action)
         pygame.display.update()
 
