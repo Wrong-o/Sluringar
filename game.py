@@ -22,8 +22,6 @@ red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
 
-death_count_per_frame = {}
-
 # Load and scale main menu background image
 bg_main_menu = pygame.image.load('./img/main_menu.png')
 bg_main_menu = pygame.transform.scale(bg_main_menu, (width, height))
@@ -39,7 +37,7 @@ def load_images(directory, name):
     return loaded_images
 
 class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, position, images, results, state=0, facing_right=True):
+    def __init__(self, position, images, results, state=0, facing_right=True, species="sluringar"):
         self.counter = 0
         super(AnimatedSprite, self).__init__()
         self.images = images
@@ -56,33 +54,40 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.vy = 0  # Vertical velocity
         self.alive = True
         self.results = results
+        self.species = species
+        self.landed = False
 
     def flip_image(self, image, facing_right):
         return pygame.transform.flip(image, not facing_right, False)
 
     def update(self, dt):
-        if self.counter == 0 and self.rect.bottom <= height:
+        if self.rect.bottom >= height: 
+            self.landed = True
+            self.rect.bottom = height
+
+        if self.landed == False:
             self.rect.y += self.vy
-            self.vy += self.gravity
-        """Update sprite animation, position, and jump if on frame 10."""
-        self.current_time += dt
-        if self.current_time >= self.animation_time:
-            self.current_time = 0
-            old_bottom = self.rect.bottom
-            old_centerx = self.rect.centerx
-            self.index = (self.index + 1) % len(self.images)
-            self.image = self.flip_image(self.images[self.index], self.facing_right)
-            self.rect = self.image.get_rect(midbottom=(old_centerx, old_bottom))
-            if self.index == 11 and self.alive:  # Trigger jump on frame 10
-                if random.random() < 0.8:
-                    self.is_jumping = True
-                    self.counter += 1
-                    self.vy = -5  # Initial vertical velocity for the jump (negative for upwards motion)
-                else:
-                    self.alive = False
-                    self.results.append(self.counter)
-        if self.is_jumping:
-            self.jump()
+            self.vy += self.gravity 
+        else:
+            """Update sprite animation, position, and jump if on frame 10."""
+            self.current_time += dt
+            if self.current_time >= self.animation_time:
+                self.current_time = 0
+                old_bottom = self.rect.bottom
+                old_centerx = self.rect.centerx
+                self.index = (self.index + 1) % len(self.images)
+                self.image = self.flip_image(self.images[self.index], self.facing_right)
+                self.rect = self.image.get_rect(midbottom=(old_centerx, old_bottom))
+                if self.index == 11 and self.alive:  # Trigger jump on frame 10
+                    if random.random() < 0.8:
+                        self.is_jumping = True
+                        self.counter += 1
+                        self.vy = -5  # Initial vertical velocity for the jump (negative for upwards motion)
+                    else:
+                        self.alive = False
+                        self.results[self.species].append(self.counter)
+            if self.is_jumping:
+                self.jump()
 
     def jump(self):
         """Handle jumping physics."""
@@ -154,21 +159,20 @@ class Slider:
     def get_value(self):
         return self.val
 
-def draw_histogram(screen, sorted_results):
+def draw_histogram(screen, sorted_results, species, x_mod, y_mod):
     # Calculate dimensions and positions
-    bar_width = width / 80
+    bar_width = width / 160
     margin = width / 120
     max_height = height / 2
-    bar_color = (0, 128, 255)
+    bar_color = (0, 255, 0, 128) if species == "sluringar" else (255, 0, 255, 128)
     label_color = (255, 255, 255)
     value_label_font_size = round(height / 40)
     count_label_font_size = round(height / 40)
     max_count = max(count for value, count in sorted_results) if sorted_results else 1
-    x_offset = width / 30
-    y_offset = height / 8 * 7
+    x_offset = width / x_mod
+    y_offset = height / y_mod
     value_label_font = pygame.font.Font(None, value_label_font_size)
     count_label_font = pygame.font.Font(None, count_label_font_size)
-
 
     for i, (value, count) in enumerate(sorted_results):
         bar_height = int((count / max_count) * max_height)
@@ -183,8 +187,7 @@ def draw_histogram(screen, sorted_results):
         # Draw count labels above bars
         count_label = count_label_font.render(str(count), True, label_color)
         screen.blit(count_label, (x, y - 20))
-    
-        
+
     # Add axis labels
     axis_font = pygame.font.Font(None, 24)
     x_axis_label = axis_font.render('Value', True, label_color)
@@ -196,7 +199,6 @@ def draw_histogram(screen, sorted_results):
     # Draw y-axis label rotated 90 degrees
     y_axis_label_rotated = pygame.transform.rotate(y_axis_label, 90)
     screen.blit(y_axis_label_rotated, (10, height // 2))
-
 
 def exp_dist():
     paused = True
@@ -231,37 +233,38 @@ def exp_dist():
     all_sprites = pygame.sprite.Group()
 
     # Variables to manage timed spawning
-    num_slurings = 100  # Number of slurings to spawn
-    num_bluring = 100
+    num_slurings = 500  # Number of slurings to spawn
+    num_bluring = 500
     sluring_spawned_count = 0
     bluring_spawned_count = 0
-    last_spawn_time = pygame.time.get_ticks()
+    last_sluring_spawn_time = pygame.time.get_ticks()
+    last_bluring_spawn_time = pygame.time.get_ticks()
     sluring_spawn_interval = 5  # milliseconds
     bluring_spawn_interval = 5
-    results = []
-    results_found = False
+    results = {"sluringar": [], "bluringar": []}
+    results_found = {"sluringar": False, "bluringar": False}
     running = True
-    
+
     while running:
         current_time = pygame.time.get_ticks()
 
         # Spawn sprites with a delay
-        if sluring_spawned_count < num_slurings and current_time - last_spawn_time >= sluring_spawn_interval:
+        if sluring_spawned_count < num_slurings and current_time - last_sluring_spawn_time >= sluring_spawn_interval:
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider.get_value()  # Example of using slider value for jump probability
-            sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/19*18, height / 20))), sluring_images, results, jump_prob)
+            sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/19*18, height / 20))), sluring_images, results, jump_prob, species="sluringar")
             all_sprites.add(sluring_sprite)
-            last_spawn_time = current_time
+            last_sluring_spawn_time = current_time
             sluring_spawned_count += 1
 
-        if bluring_spawned_count < num_bluring and current_time - last_spawn_time >= bluring_spawn_interval:
+        if bluring_spawned_count < num_bluring and current_time - last_bluring_spawn_time >= bluring_spawn_interval:
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider.get_value()  # Example of using slider value for jump probability
-            bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/19*18, height / 20))), bluring_images, results, jump_prob)
+            bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/19*18, height / 20))), bluring_images, results, jump_prob, species="bluringar")
             all_sprites.add(bluring_sprite)
-            last_spawn_time = current_time
+            last_bluring_spawn_time = current_time
             bluring_spawned_count += 1
 
         for event in pygame.event.get():
@@ -277,30 +280,43 @@ def exp_dist():
         screen.blit(bg_main_menu, (0, 0))
         all_sprites.draw(screen)
 
-
         # Check if all sprites are dead and display the frequency table
         if sluring_spawned_count == num_slurings and bluring_spawned_count == num_bluring and all(sprite.alive == False for sprite in all_sprites):
-            if not results_found:
-                freq_table = Counter(results)
-                min_value = min(results) if results else 0
-                max_value = max(results) if results else 0
-                sorted_result = [(value, freq_table.get(value, 0)) for value in range(min_value, max_value + 1)]
-                results_found = True
+            if not results_found["sluringar"]:
+                freq_table_sluringar = Counter(results["sluringar"])
+                min_value_sluringar = min(results["sluringar"]) if results["sluringar"] else 0
+                max_value_sluringar = max(results["sluringar"]) if results["sluringar"] else 0
+                sorted_result_sluringar = [(value, freq_table_sluringar.get(value, 0)) for value in range(min_value_sluringar, max_value_sluringar + 1)]
+                results_found["sluringar"] = True
 
-        # Draw histogram if results are found
-        if results_found:
-            draw_histogram(screen, sorted_result)
+            if not results_found["bluringar"]:
+                freq_table_bluringar = Counter(results["bluringar"])
+                min_value_bluringar = min(results["bluringar"]) if results["bluringar"] else 0
+                max_value_bluringar = max(results["bluringar"]) if results["bluringar"] else 0
+                sorted_result_bluringar = [(value, freq_table_bluringar.get(value, 0)) for value in range(min_value_bluringar, max_value_bluringar + 1)]
+                results_found["bluringar"] = True
+
+        # Draw histograms if results are found
+        if results_found["sluringar"]:
+            draw_histogram(screen, sorted_result_sluringar, "sluringar", 30, 1.2)
+
+        if results_found["bluringar"]:
+            draw_histogram(screen, sorted_result_bluringar, "bluringar", 25, 1.2)
+
         pygame.display.update()
 
 def normal_action():
     print("Normal action selected")
     # Implement the functionality for the normal distribution here
+
 def poisson_action():
     print("Poisson action selected")
     # Implement the functionality for the poisson distribution here
+
 def exit_action():
     pygame.quit()
     sys.exit()
+
 def main_menu():
     menu = True
     while menu:
@@ -310,7 +326,6 @@ def main_menu():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     exit_action()
-            
 
         screen.blit(bg_main_menu, (0, 0))
         draw_button("Exponential", width * 0.20, height / 2, 200, 100, green, exp_dist)
@@ -318,4 +333,5 @@ def main_menu():
         draw_button("Poisson", width * 0.80, height / 2, 200, 100, green, poisson_action)
         draw_button("Exit", 50, 50, 100, 50, red, exit_action)
         pygame.display.update()
+
 main_menu()
