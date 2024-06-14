@@ -21,8 +21,8 @@ def swap_green_blue(image_path, output_path):
         img.save(output_path, "PNG")
 
 # Specify your image path and output path
-image_path = '/mnt/data/sluring1.png'
-output_path = '/mnt/data/output_image_swapped.png'
+image_path = './sluring_sleep/sluring_sleep1.png'
+output_path = './bluring_sleep/'
 
 # Call the function to swap green and blue
 swap_green_blue(image_path, output_path)

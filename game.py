@@ -29,18 +29,26 @@ bg_main_menu = pygame.transform.scale(bg_main_menu, (width, height))
 def load_images(directory, name):
     """Load images and flip them horizontally to face right."""
     loaded_images = []
-    for i in range(1, 18):
-        file_path = os.path.join(directory, f"{name}{i}.png")
+    
+    # Get all PNG files in the directory
+    files = [f for f in os.listdir(directory) if f.endswith('.png') and f.startswith(name)]
+    
+    # Sort the files by the numerical part of their names
+    files.sort(key=lambda f: int(f[len(name):-4]))
+
+    for file in files:
+        file_path = os.path.join(directory, file)
         image = pygame.image.load(file_path).convert_alpha()
         image_flipped = pygame.transform.flip(image, True, False)  # Flip horizontally, not vertically
         loaded_images.append(image_flipped)
+    
     return loaded_images
-
 class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, position, images, results, state=0, facing_right=True, species="sluringar"):
+    def __init__(self, position, images, sleeping_img, results, state=0, facing_right=True, species="sluringar"):
         self.counter = 0
         super(AnimatedSprite, self).__init__()
         self.images = images
+        self.sleeping_img = sleeping_img[0] if sleeping_img else None
         self.index = 0
         self.image = self.flip_image(self.images[self.index], facing_right)
         self.rect = self.image.get_rect(midbottom=position)
@@ -49,28 +57,26 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.state = state
         self.facing_right = facing_right
         self.is_jumping = False
-        self.vx = screen_scaler *  0.0015 # Horizontal velocity
+        self.vx = screen_scaler * 0.0015  # Horizontal velocity
         self.gravity = screen_scaler * 0.00025  # Gravity effect
         self.vy = 0  # Vertical velocity
         self.alive = True
         self.results = results
         self.species = species
         self.landed = False
-        
 
     def flip_image(self, image, facing_right):
         return pygame.transform.flip(image, not facing_right, False)
 
     def update(self, dt):
-        if self.rect.bottom >= height: 
+        if self.rect.bottom >= height:
             self.landed = True
             self.rect.bottom = height
 
-        if self.landed == False:
+        if not self.landed:
             self.rect.y += self.vy
-            self.vy += self.gravity 
-        else:
-            """Update sprite animation, position, and jump if on frame 10."""
+            self.vy += self.gravity
+        elif self.alive:
             self.current_time += dt
             if self.current_time >= self.animation_time:
                 self.current_time = 0
@@ -87,8 +93,14 @@ class AnimatedSprite(pygame.sprite.Sprite):
                     else:
                         self.alive = False
                         self.results[self.species].append(self.counter)
+                        self.index = 0  # Reset index for sleeping animation
             if self.is_jumping:
                 self.jump()
+        else:
+            if self.sleeping_img:  # Check if sleeping_img is not empty
+                self.image = self.flip_image(self.sleeping_img, self.facing_right)
+            else:
+                self.image = self.flip_image(self.images[0], self.facing_right)  # Default to first image if sleeping_img is empty
 
     def jump(self):
         """Handle jumping physics."""
@@ -96,12 +108,11 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.rect.y += self.vy
         self.vy += self.gravity  # Apply gravity to vertical velocity
 
-        if self.rect.bottom >= height:  
+        if self.rect.bottom >= height:
             self.rect.bottom = height
             self.is_jumping = False
             self.vy = 0  # Stop vertical motion once back on ground
 
-        # Optionally handle moving off the screen horizontally
         if self.rect.left > width:
             self.rect.right = 0  # Wrap around to the left side
 
@@ -235,6 +246,8 @@ def exp_dist():
     start_button_clicked = False
     sluring_images = load_images("./img/sluring_small", "sluring")
     bluring_images = load_images("./img/bluring_small", "bluring")
+    sluring_sleep = load_images("./img/sluring_sleep", "sluring_sleep")
+    bluring_sleep = load_images("./img/bluring_sleep", "bluring_sleep")
     all_sprites = pygame.sprite.Group()
 
     # Define the Start button action
@@ -243,9 +256,9 @@ def exp_dist():
         start_button_clicked = True
 
     slider_left = Slider(screen, 1, 10, width // 5 , height // 2 , 300, 40)
-    slider_sluring = StaticSprite((width//16*5, height//2), sluring_images)
+    slider_sluring = StaticSprite((width//16*5, height//2), sluring_sleep)
     slider_right = Slider(screen, 1, 10, width // 5*3 , height // 2, 300, 40)
-    slider_bluring = StaticSprite((width//4*3, height//2), bluring_images)
+    slider_bluring = StaticSprite((width//4*3, height//2), bluring_sleep)
 
 
     # Pause menu loop
@@ -292,7 +305,7 @@ def exp_dist():
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider_left.get_value()  
-            sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), sluring_images, results, jump_prob, species="sluringar")
+            sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), sluring_images, sluring_sleep, results, jump_prob, species="sluringar")
             all_sprites.add(sluring_sprite)
             last_sluring_spawn_time = current_time
             sluring_spawned_count += 1
@@ -301,7 +314,7 @@ def exp_dist():
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider_right.get_value()  
-            bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), bluring_images, results, jump_prob, species="bluringar")
+            bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), bluring_images, bluring_sleep, results, jump_prob, species="bluringar")
             all_sprites.add(bluring_sprite)
             last_bluring_spawn_time = current_time
             bluring_spawned_count += 1
