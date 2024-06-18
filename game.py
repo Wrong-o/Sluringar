@@ -44,6 +44,7 @@ def load_images(directory, name):
         loaded_images.append(image_flipped)
     
     return loaded_images
+    
 class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, position, images, sleeping_img, results, state=0, facing_right=True, species="sluringar"):
         self.counter = 0
@@ -86,7 +87,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
                 self.index = (self.index + 1) % len(self.images)
                 self.image = self.flip_image(self.images[self.index], self.facing_right)
                 self.rect = self.image.get_rect(midbottom=(old_centerx, old_bottom))
-                if self.index == 11 and self.alive:  # Trigger jump on frame 10
+                if self.index == 11 and self.alive:  # Trigger jump on frame 11
                     if random.random() < 0.8:
                         self.is_jumping = True
                         self.counter += 1
@@ -95,13 +96,14 @@ class AnimatedSprite(pygame.sprite.Sprite):
                         self.alive = False
                         self.results[self.species].append(self.counter)
                         self.index = 0  # Reset index for sleeping animation
+                        self.rect.bottom = height  # Snap to the y value equal to height
             if self.is_jumping:
                 self.jump()
         else:
             if self.sleeping_img:  # Check if sleeping_img is not empty
                 self.image = self.flip_image(self.sleeping_img, self.facing_right)
             else:
-                self.image = self.flip_image(self.images[0], self.facing_right)  # Default to first image if sleeping_img is empty
+                self.image = self.flip_image(self.images[0], self.facing_right)
 
     def jump(self):
         """Handle jumping physics."""
@@ -116,7 +118,6 @@ class AnimatedSprite(pygame.sprite.Sprite):
 
         if self.rect.left > width:
             self.rect.right = 0  # Wrap around to the left side
-
 
 class StaticSprite(pygame.sprite.Sprite):
     def __init__(self, position, images, state=0, facing_right=True, species="sluringar"):
