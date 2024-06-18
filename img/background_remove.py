@@ -9,7 +9,7 @@ else:
     print("File not found. Check the path.")
 
 os.listdir()
-def remove_white_background(image_path, output_path, tolerance=2):
+def remove_white_background(image_path, output_path, tolerance=1):
     """Remove the white background from an image and save the new image with transparency."""
     with Image.open(image_path) as img:
         img = img.convert("RGBA")  # Ensure the image has an alpha channel
@@ -27,8 +27,8 @@ def remove_white_background(image_path, output_path, tolerance=2):
         img.save(output_path, "PNG")
 
 # Specify your image path and output path
-image_path = 'bluring1.webp'  # Update this path to the location of your source image
-output_path = 'bluring1.png'
+image_path = './spawn_log/spawn_log.png'  # Update this path to the location of your source image
+output_path = './spawn_log/spawn_log.png'
 
 # Call the function
 remove_white_background(image_path, output_path)

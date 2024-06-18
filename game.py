@@ -25,6 +25,7 @@ blue = (0, 0, 255)
 # Load and scale main menu background image
 bg_main_menu = pygame.image.load('./img/main_menu.png')
 bg_main_menu = pygame.transform.scale(bg_main_menu, (width, height))
+spawn_log = pygame.image.load('./img/spawn_log/spawn_log.png')
 
 def load_images(directory, name):
     """Load images and flip them horizontally to face right."""
@@ -330,6 +331,7 @@ def exp_dist():
         dt = clock.tick(60) / 1000.0  # Get delta time and limit frame rate
         all_sprites.update(dt)
         screen.blit(bg_main_menu, (0, 0))
+        screen.blit(spawn_log, (-width/ 3,-height/3))
         all_sprites.draw(screen)
 
         # Check if all sprites are dead and display the frequency table
