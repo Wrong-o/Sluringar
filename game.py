@@ -46,7 +46,7 @@ def load_images(directory, name):
     return loaded_images
     
 class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, position, images, sleeping_img, results, state=0, facing_right=True, species="sluringar"):
+    def __init__(self, position, images, sleeping_img, results, survival_prob, state=0, facing_right=True,  species="sluringar"):
         self.counter = 0
         super(AnimatedSprite, self).__init__()
         self.images = images
@@ -66,6 +66,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.results = results
         self.species = species
         self.landed = False
+        self.survival_prob = survival_prob
 
     def flip_image(self, image, facing_right):
         return pygame.transform.flip(image, not facing_right, False)
@@ -88,7 +89,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
                 self.image = self.flip_image(self.images[self.index], self.facing_right)
                 self.rect = self.image.get_rect(midbottom=(old_centerx, old_bottom))
                 if self.index == 11 and self.alive:  # Trigger jump on frame 11
-                    if random.random() < 0.8:
+                    if random.random() < self.survival_prob:
                         self.is_jumping = True
                         self.counter += 1
                         self.vy = -5  # Initial vertical velocity for the jump (negative for upwards motion)
@@ -278,11 +279,15 @@ def exp_dist():
         slider_right.draw()
         all_sprites.add(slider_sluring, slider_bluring)
         all_sprites.draw(screen)
+        sluring_prob = slider_left.get_value()   
+        bluring_prob = slider_right.get_value()
         pygame.display.update()
-
+        print(sluring_prob)
         if start_button_clicked:
             paused = False
-            all_sprites.empty()  # Exit pause menu loop to resume the game
+            all_sprites.empty()
+            print("complete")
+            print(sluring_prob)
 
 
 
@@ -307,7 +312,7 @@ def exp_dist():
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider_left.get_value()  
-            sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), sluring_images, sluring_sleep, results, jump_prob, species="sluringar")
+            sluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), sluring_images, sluring_sleep, results, survival_prob = sluring_prob/10, species="sluringar")
             all_sprites.add(sluring_sprite)
             last_sluring_spawn_time = current_time
             sluring_spawned_count += 1
@@ -316,7 +321,7 @@ def exp_dist():
             spawn_x = width / 25
             spawn_y = height
             jump_prob = slider_right.get_value()  
-            bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), bluring_images, bluring_sleep, results, jump_prob, species="bluringar")
+            bluring_sprite = AnimatedSprite((int(random.gauss(width / 25, width / 100)), int(random.gauss(height/4, height / 20))), bluring_images, bluring_sleep, results, survival_prob = bluring_prob/10, species="bluringar")
             all_sprites.add(bluring_sprite)
             last_bluring_spawn_time = current_time
             bluring_spawned_count += 1
